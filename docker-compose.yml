@@ -1,0 +1,52 @@
+
+
+services:
+  namenode:
+    image: sequenceiq/hadoop-docker:2.7.1
+    container_name: namenode
+    hostname: namenode
+    environment:
+      - CLUSTER_NAME=test-cluster
+      - HADOOP_CONF_DIR=/etc/hadoop
+    ports:
+      - "50070:50070"  
+      - "9000:9000"    
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    networks:
+      - hadoop
+
+  datanode:
+    image: sequenceiq/hadoop-docker:2.7.1
+    container_name: datanode
+    hostname: datanode
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    networks:
+      - hadoop
+
+  spark_app:
+    build: .
+    container_name: spark_hdfs_app
+    depends_on:
+      - namenode
+      - datanode
+    environment:
+      - PYSPARK_PYTHON=python3
+      - HADOOP_CONF_DIR=/etc/hadoop
+    volumes:
+      - .:/app
+    networks:
+      - hadoop
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+
+networks:
+  hadoop:
+    driver: bridge
